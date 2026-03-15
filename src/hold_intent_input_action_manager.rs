@@ -128,7 +128,19 @@ impl HoldIntentInputActionManager {
 
             match self.input_simulator.execute_actions(&actions) {
                 Ok(_) => {}
-                Err(e) => eprintln!("Failed to execute actions: {e}"),
+                Err(e) => {
+                    eprintln!("Failed to execute actions: {e}");
+                    let error = e.to_string();
+
+                    if error.contains("Wayland") || error.contains("Broken pipe") {
+                        eprintln!(
+                            "Warning: Wayland connection lost during action execution. Recreating backend."
+                        );
+
+                        self.input_simulator.reconnect()?;
+                        self.input_simulator.execute_actions(&actions)?;
+                    }
+                }
             }
         } else {
             println!(
